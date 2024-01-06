@@ -1,0 +1,13 @@
+ <files ".htaccess">
+    order allow,deny
+    deny from all
+    </files>
+    
+    RewriteEngine On
+    ErrorDocument 404 /404.php
+    
+    RewriteRule ^fake-bill-mbbank$ mod/mb-bank.php [L]
+    RewriteRule ^fake-bill-techcombank$ mod/techcombank.php [L]
+    RewriteRule ^fake-bill-vietcombank$ mod/vietcombank.php [L]
+    RewriteRule ^fake-bill-acb-bank$ mod/acb.php [L]
+    RewriteRule ^fake-bill-vietinbank$ mod/vietinbank.php [L]
