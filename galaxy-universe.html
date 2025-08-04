@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Vũ Trụ Bình Yên</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: radial-gradient(ellipse at center, #0a0a2a 0%, #000000 100%);
+      }
+      canvas {
+        display: block;
+      }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  </head>
+  <body>
+
+    
+    <audio id="bgMusic" preload="auto" loop>
+      <source src="music/univer.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
+    <script>
+      const scene = new THREE.Scene();
+      scene.fog = new THREE.Fog(0x000000, 50, 200);
+      
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setClearColor(0x000000, 0);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.5;
+      document.body.appendChild(renderer.domElement);
+
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = 0.2;
+
+      // Create ultra beautiful galaxy
+      const galaxyGeometry = new THREE.BufferGeometry();
+      const count = 150000; // Tăng số particles
+      const positions = new Float32Array(count * 3);
+      const colors = new Float32Array(count * 3);
+      const sizes = new Float32Array(count);
+
+      const colorInside = new THREE.Color("#00ffff"); // Cyan đẹp hơn
+      const colorMiddle = new THREE.Color("#ff00ff"); // Magenta
+      const colorOutside = new THREE.Color("#ffff00"); // Yellow
+
+      for (let i = 0; i < count; i++) {
+        const i3 = i * 3;
+
+        const radius = Math.random() * 10; // Tăng kích thước galaxy
+        const branch = (i % 8) * ((2 * Math.PI) / 8); // Tăng số arms
+        const spin = radius * 3; // Tăng spin
+
+        // Make galaxy thinner towards the edges
+        const thicknessFactor = Math.max(0.1, 1 - (radius / 10)); // Thinner at edges
+        const randomX = Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * 2;
+        const randomY = Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * 0.05 * thicknessFactor;
+        const randomZ = Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * 2;
+
+        positions[i3 + 0] = Math.cos(branch + spin) * radius + randomX;
+        positions[i3 + 1] = randomY * thicknessFactor;
+        positions[i3 + 2] = Math.sin(branch + spin) * radius + randomZ;
+
+        // Enhanced color gradient with more vibrant colors - brighter at center
+        let mixedColor;
+        if (radius < 4) {
+          mixedColor = colorInside.clone();
+          mixedColor.lerp(colorMiddle, radius / 4);
+          // Make center more vibrant
+          mixedColor.r = Math.min(1, mixedColor.r * 1.5);
+          mixedColor.g = Math.min(1, mixedColor.g * 1.5);
+          mixedColor.b = Math.min(1, mixedColor.b * 1.5);
+        } else {
+          mixedColor = colorMiddle.clone();
+          mixedColor.lerp(colorOutside, (radius - 4) / 6);
+        }
+
+        // Add some random color variation - less variation at edges
+        const colorVariation = Math.max(0.1, 1 - (radius / 10));
+        mixedColor.r += (Math.random() - 0.5) * 0.3 * colorVariation;
+        mixedColor.g += (Math.random() - 0.5) * 0.3 * colorVariation;
+        mixedColor.b += (Math.random() - 0.5) * 0.3 * colorVariation;
+
+        colors[i3 + 0] = Math.max(0, Math.min(1, mixedColor.r));
+        colors[i3 + 1] = Math.max(0, Math.min(1, mixedColor.g));
+        colors[i3 + 2] = Math.max(0, Math.min(1, mixedColor.b));
+
+        // Varied particle sizes with more variation - smaller at edges, bigger at center
+        const sizeFactor = Math.max(0.3, 1 - (radius / 10)); // Smaller particles at edges
+        const centerSizeBoost = radius < 3 ? 2.0 : 1.0; // Bigger particles at center
+        sizes[i] = (Math.random() * 0.05 + 0.02) * sizeFactor * centerSizeBoost;
+      }
+
+      galaxyGeometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      galaxyGeometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+      galaxyGeometry.setAttribute("size", new THREE.BufferAttribute(sizes, 1));
+
+      const material = new THREE.PointsMaterial({
+        size: 0.02,
+        sizeAttenuation: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.98,
+        map: null // Đảm bảo không có texture vuông
+      });
+
+      const points = new THREE.Points(galaxyGeometry, material);
+      scene.add(points);
+
+      // Create central core from particles
+      const centralCoreGeometry = new THREE.BufferGeometry();
+      const centralCoreCount = 5000;
+      const centralCorePositions = new Float32Array(centralCoreCount * 3);
+      const centralCoreColors = new Float32Array(centralCoreCount * 3);
+      const centralCoreSizes = new Float32Array(centralCoreCount);
+
+      for (let i = 0; i < centralCoreCount; i++) {
+        const i3 = i * 3;
+        const radius = 1.2 + Math.random() * 0.8; // Thicker sphere shape
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(Math.random() * 2 - 1);
+        
+        centralCorePositions[i3] = radius * Math.sin(phi) * Math.cos(theta);
+        centralCorePositions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+        centralCorePositions[i3 + 2] = radius * Math.cos(phi);
+
+        // Beautiful sun-like core colors
+        const coreColor = new THREE.Color();
+        const colorType = Math.random();
+        if (colorType < 0.4) {
+          // Bright yellow center
+          const hue = Math.random() * 0.05 + 0.12; // Bright yellow
+          const saturation = 0.9 + Math.random() * 0.1;
+          const lightness = 0.8 + Math.random() * 0.2;
+          coreColor.setHSL(hue, saturation, lightness);
+        } else if (colorType < 0.7) {
+          // Golden orange
+          const hue = Math.random() * 0.08 + 0.08; // Golden orange
+          const saturation = 0.8 + Math.random() * 0.2;
+          const lightness = 0.7 + Math.random() * 0.3;
+          coreColor.setHSL(hue, saturation, lightness);
+        } else {
+          // Bright white-yellow
+          const hue = Math.random() * 0.03 + 0.13; // White-yellow
+          const saturation = 0.6 + Math.random() * 0.4;
+          const lightness = 0.9 + Math.random() * 0.1;
+          coreColor.setHSL(hue, saturation, lightness);
+        }
+        
+        centralCoreColors[i3] = coreColor.r;
+        centralCoreColors[i3 + 1] = coreColor.g;
+        centralCoreColors[i3 + 2] = coreColor.b;
+
+        centralCoreSizes[i] = Math.random() * 0.04 + 0.02; // Smaller particles
+      }
+
+      centralCoreGeometry.setAttribute("position", new THREE.BufferAttribute(centralCorePositions, 3));
+      centralCoreGeometry.setAttribute("color", new THREE.BufferAttribute(centralCoreColors, 3));
+      centralCoreGeometry.setAttribute("size", new THREE.BufferAttribute(centralCoreSizes, 1));
+
+      const centralCoreMaterial = new THREE.PointsMaterial({
+        size: 0.03,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.6,
+        blending: THREE.AdditiveBlending,
+        sizeAttenuation: true,
+        map: null // Đảm bảo không có texture vuông
+      });
+
+      const centralCore = new THREE.Points(centralCoreGeometry, centralCoreMaterial);
+      scene.add(centralCore);
+
+      // Create sun rays effect
+      const sunRaysGeometry = new THREE.BufferGeometry();
+      const rayCount = 300;
+      const rayPositions = new Float32Array(rayCount * 3);
+      const rayColors = new Float32Array(rayCount * 3);
+      const raySizes = new Float32Array(rayCount);
+
+      for (let i = 0; i < rayCount; i++) {
+        const i3 = i * 3;
+        const angle = (i / rayCount) * Math.PI * 2;
+        const radius = 1.8 + Math.random() * 0.8; // Rays close to core
+        
+        rayPositions[i3] = Math.cos(angle) * radius;
+        rayPositions[i3 + 1] = (Math.random() - 0.5) * 0.2; // Very thin rays
+        rayPositions[i3 + 2] = Math.sin(angle) * radius;
+
+        // Bright ray colors
+        const rayColor = new THREE.Color();
+        const rayType = Math.random();
+        if (rayType < 0.5) {
+          // Bright yellow rays
+          const hue = Math.random() * 0.05 + 0.12;
+          const saturation = 0.8 + Math.random() * 0.2;
+          const lightness = 0.9 + Math.random() * 0.1;
+          rayColor.setHSL(hue, saturation, lightness);
+        } else {
+          // Bright white rays
+          const hue = Math.random() * 0.02 + 0.13;
+          const saturation = 0.3 + Math.random() * 0.3;
+          const lightness = 0.95 + Math.random() * 0.05;
+          rayColor.setHSL(hue, saturation, lightness);
+        }
+        
+        rayColors[i3] = rayColor.r;
+        rayColors[i3 + 1] = rayColor.g;
+        rayColors[i3 + 2] = rayColor.b;
+
+        raySizes[i] = Math.random() * 0.02 + 0.01; // Smaller rays
+      }
+
+      sunRaysGeometry.setAttribute("position", new THREE.BufferAttribute(rayPositions, 3));
+      sunRaysGeometry.setAttribute("color", new THREE.BufferAttribute(rayColors, 3));
+      sunRaysGeometry.setAttribute("size", new THREE.BufferAttribute(raySizes, 1));
+
+      const sunRaysMaterial = new THREE.PointsMaterial({
+        size: 0.02,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.4,
+        blending: THREE.AdditiveBlending,
+        sizeAttenuation: true,
+        map: null // Đảm bảo không có texture vuông
+      });
+
+      const sunRays = new THREE.Points(sunRaysGeometry, sunRaysMaterial);
+      scene.add(sunRays);
+
+      // Create central core sparkles
+      const coreSparklesGeometry = new THREE.BufferGeometry();
+      const coreSparkleCount = 800;
+      const coreSparklePositions = new Float32Array(coreSparkleCount * 3);
+      const coreSparkleColors = new Float32Array(coreSparkleCount * 3);
+      const coreSparkleSizes = new Float32Array(coreSparkleCount);
+
+      for (let i = 0; i < coreSparkleCount; i++) {
+        const i3 = i * 3;
+        const radius = 0.8 + Math.random() * 0.4; // Around the core
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(Math.random() * 2 - 1);
+        
+        coreSparklePositions[i3] = radius * Math.sin(phi) * Math.cos(theta);
+        coreSparklePositions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+        coreSparklePositions[i3 + 2] = radius * Math.cos(phi);
+
+        // Multi-color sparkle colors
+        const sparkleColor = new THREE.Color();
+        const colorType = Math.random();
+        if (colorType < 0.3) {
+          // Golden sparkles
+          const hue = Math.random() * 0.08 + 0.12;
+          const saturation = 0.8 + Math.random() * 0.2;
+          const lightness = 0.7 + Math.random() * 0.3;
+          sparkleColor.setHSL(hue, saturation, lightness);
+        } else if (colorType < 0.6) {
+          // Orange sparkles
+          const hue = Math.random() * 0.08 + 0.08;
+          const saturation = 0.8 + Math.random() * 0.2;
+          const lightness = 0.7 + Math.random() * 0.3;
+          sparkleColor.setHSL(hue, saturation, lightness);
+        } else {
+          // Red sparkles
+          const hue = Math.random() * 0.05 + 0.0;
+          const saturation = 0.8 + Math.random() * 0.2;
+          const lightness = 0.7 + Math.random() * 0.3;
+          sparkleColor.setHSL(hue, saturation, lightness);
+        }
+        
+        coreSparkleColors[i3] = sparkleColor.r;
+        coreSparkleColors[i3 + 1] = sparkleColor.g;
+        coreSparkleColors[i3 + 2] = sparkleColor.b;
+
+        coreSparkleSizes[i] = Math.random() * 0.02 + 0.01; // Tiny sparkles
+      }
+
+      coreSparklesGeometry.setAttribute("position", new THREE.BufferAttribute(coreSparklePositions, 3));
+      coreSparklesGeometry.setAttribute("color", new THREE.BufferAttribute(coreSparkleColors, 3));
+      coreSparklesGeometry.setAttribute("size", new THREE.BufferAttribute(coreSparkleSizes, 1));
+
+      const coreSparklesMaterial = new THREE.PointsMaterial({
+        size: 0.015,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending,
+        sizeAttenuation: true,
+        map: null // Đảm bảo không có texture vuông
+      });
+
+      const coreSparkles = new THREE.Points(coreSparklesGeometry, coreSparklesMaterial);
+      scene.add(coreSparkles);
+
+      // Create sparkling ring effect
+      const ringSparklesGeometry = new THREE.BufferGeometry();
+      const ringSparkleCount = 2000; // More particles for smooth rainbow
+      const ringSparklePositions = new Float32Array(ringSparkleCount * 3);
+      const ringSparkleColors = new Float32Array(ringSparkleCount * 3);
+      const ringSparkleSizes = new Float32Array(ringSparkleCount);
+
+      for (let i = 0; i < ringSparkleCount; i++) {
+        const i3 = i * 3;
+        const angle = (i / ringSparkleCount) * Math.PI * 2;
+        const radius = 2.8 + Math.random() * 0.4; // Same radius for both rings 2.8-3.2
+        
+        ringSparklePositions[i3] = Math.cos(angle) * radius;
+        ringSparklePositions[i3 + 1] = (Math.random() - 0.5) * 1.2; // Much thicker ring
+        ringSparklePositions[i3 + 2] = Math.sin(angle) * radius;
+
+        // True rainbow sparkle colors
+        const sparkleColor = new THREE.Color();
+        const position = i / ringSparkleCount;
+        let hue;
+        if (position < 0.14) {
+          hue = 0.0; // Red
+        } else if (position < 0.28) {
+          hue = 0.08; // Orange
+        } else if (position < 0.42) {
+          hue = 0.16; // Yellow
+        } else if (position < 0.57) {
+          hue = 0.33; // Green
+        } else if (position < 0.71) {
+          hue = 0.5; // Cyan
+        } else if (position < 0.85) {
+          hue = 0.66; // Blue
+        } else {
+          hue = 0.83; // Purple
+        }
+        const saturation = 0.9 + Math.random() * 0.1;
+        const lightness = 0.7 + Math.random() * 0.3;
+        sparkleColor.setHSL(hue, saturation, lightness);
+        
+        ringSparkleColors[i3] = sparkleColor.r;
+        ringSparkleColors[i3 + 1] = sparkleColor.g;
+        ringSparkleColors[i3 + 2] = sparkleColor.b;
+
+        ringSparkleSizes[i] = Math.random() * 0.015 + 0.008; // Ultra tiny sparkles
+      }
+
+      ringSparklesGeometry.setAttribute("position", new THREE.BufferAttribute(ringSparklePositions, 3));
+      ringSparklesGeometry.setAttribute("color", new THREE.BufferAttribute(ringSparkleColors, 3));
+      ringSparklesGeometry.setAttribute("size", new THREE.BufferAttribute(ringSparkleSizes, 1));
+
+      const ringSparklesMaterial = new THREE.PointsMaterial({
+        size: 0.025, // Ultra tiny size
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.95, // Higher opacity for thickness
+        blending: THREE.AdditiveBlending,
+        sizeAttenuation: true,
+        map: null // Đảm bảo không có texture vuông
+      });
+
+      const ringSparkles = new THREE.Points(ringSparklesGeometry, ringSparklesMaterial);
+      scene.add(ringSparkles);
+
+      // Create second ring sparkles
+      const ringSparkles2Geometry = new THREE.BufferGeometry();
+      const ringSparkle2Count = 2000; // More particles for smooth rainbow
+      const ringSparkle2Positions = new Float32Array(ringSparkle2Count * 3);
+      const ringSparkle2Colors = new Float32Array(ringSparkle2Count * 3);
+      const ringSparkle2Sizes = new Float32Array(ringSparkle2Count);
+
+      for (let i = 0; i < ringSparkle2Count; i++) {
+        const i3 = i * 3;
+        const angle = (i / ringSparkle2Count) * Math.PI * 2;
+        const radius = 2.8 + Math.random() * 0.4; // Same radius for both rings 2.8-3.2
+        
+        ringSparkle2Positions[i3] = Math.cos(angle) * radius;
+        ringSparkle2Positions[i3 + 1] = (Math.random() - 0.5) * 1.2; // Same thickness
+        ringSparkle2Positions[i3 + 2] = Math.sin(angle) * radius;
+
+        // True rainbow sparkle colors (opposite direction)
+        const sparkleColor = new THREE.Color();
+        const position = i / ringSparkle2Count;
+        let hue;
+        if (position < 0.14) {
+          hue = 0.83; // Purple
+        } else if (position < 0.28) {
+          hue = 0.66; // Blue
+        } else if (position < 0.42) {
+          hue = 0.5; // Cyan
+        } else if (position < 0.57) {
+          hue = 0.33; // Green
+        } else if (position < 0.71) {
+          hue = 0.16; // Yellow
+        } else if (position < 0.85) {
+          hue = 0.08; // Orange
+        } else {
+          hue = 0.0; // Red
+        }
+        const saturation = 0.9 + Math.random() * 0.1;
+        const lightness = 0.7 + Math.random() * 0.3;
+        sparkleColor.setHSL(hue, saturation, lightness);
+        
+        ringSparkle2Colors[i3] = sparkleColor.r;
+        ringSparkle2Colors[i3 + 1] = sparkleColor.g;
+        ringSparkle2Colors[i3 + 2] = sparkleColor.b;
+
+        ringSparkle2Sizes[i] = Math.random() * 0.01 + 0.005; // Ultra tiny sparkles
+      }
+
+      ringSparkles2Geometry.setAttribute("position", new THREE.BufferAttribute(ringSparkle2Positions, 3));
+      ringSparkles2Geometry.setAttribute("color", new THREE.BufferAttribute(ringSparkle2Colors, 3));
+      ringSparkles2Geometry.setAttribute("size", new THREE.BufferAttribute(ringSparkle2Sizes, 1));
+
+      const ringSparkles2Material = new THREE.PointsMaterial({
+        size: 0.02, // Ultra tiny size
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.9, // Slightly lower opacity
+        blending: THREE.AdditiveBlending,
+        sizeAttenuation: true,
+        map: null // Đảm bảo không có texture vuông
+      });
+
+      const ringSparkles2 = new THREE.Points(ringSparkles2Geometry, ringSparkles2Material);
+      scene.add(ringSparkles2);
+
+      // Animation variables for entrance effect
+      let entranceProgress = 0;
+      let isEntranceComplete = false;
+      const entranceDuration = 4000; // 4 seconds for camera movement
+      const startTime = Date.now();
+
+      // Store original positions for animation
+      const originalPositions = new Float32Array(count * 3);
+      const targetPositions = new Float32Array(count * 3);
+      
+      for (let i = 0; i < count; i++) {
+        const i3 = i * 3;
+        originalPositions[i3] = positions[i3];
+        originalPositions[i3 + 1] = positions[i3 + 1];
+        originalPositions[i3 + 2] = positions[i3 + 2];
+        targetPositions[i3] = positions[i3];
+        targetPositions[i3 + 1] = positions[i3 + 1];
+        targetPositions[i3 + 2] = positions[i3 + 2];
+      }
+
+      // Set initial positions far away
+      for (let i = 0; i < count; i++) {
+        const i3 = i * 3;
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 50 + Math.random() * 100;
+        positions[i3] = Math.cos(angle) * distance;
+        positions[i3 + 1] = (Math.random() - 0.5) * 100;
+        positions[i3 + 2] = Math.sin(angle) * distance;
+      }
+      galaxyGeometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+
+      // Create beautiful star field like test.html
+      const starFieldGeometry = new THREE.BufferGeometry();
+      const starCount = 2000; // Tăng số ngôi sao
+      const starPositions = new Float32Array(starCount * 3);
+      const starColors = new Float32Array(starCount * 3);
+      const starSizes = new Float32Array(starCount);
+
+      for (let i = 0; i < starCount; i++) {
+        const i3 = i * 3;
+        const radius = 20 + Math.random() * 80;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(Math.random() * 2 - 1);
+        
+        starPositions[i3] = radius * Math.sin(phi) * Math.cos(theta);
+        starPositions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+        starPositions[i3 + 2] = radius * Math.cos(phi);
+
+        const starColor = new THREE.Color();
+        const colorType = Math.random();
+        if (colorType < 0.2) {
+          starColor.setHSL(0, 0.8, 0.8); // Red
+        } else if (colorType < 0.4) {
+          starColor.setHSL(0.08, 0.8, 0.8); // Orange
+        } else if (colorType < 0.6) {
+          starColor.setHSL(0.12, 0.8, 0.9); // Yellow
+        } else if (colorType < 0.8) {
+          starColor.setHSL(0.6, 0.8, 0.8); // Blue
+        } else {
+          starColor.setHSL(0.8, 0.8, 0.8); // Purple
+        }
+        
+        starColors[i3] = starColor.r;
+        starColors[i3 + 1] = starColor.g;
+        starColors[i3 + 2] = starColor.b;
+
+        starSizes[i] = Math.random() * 0.3 + 0.1; // Nhỏ hơn như test.html
+      }
+
+      starFieldGeometry.setAttribute("position", new THREE.BufferAttribute(starPositions, 3));
+      starFieldGeometry.setAttribute("color", new THREE.BufferAttribute(starColors, 3));
+      starFieldGeometry.setAttribute("size", new THREE.BufferAttribute(starSizes, 1));
+
+      const starFieldMaterial = new THREE.PointsMaterial({
+        size: 0.1, // Nhỏ hơn như test.html
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.8,
+        blending: THREE.AdditiveBlending,
+        sizeAttenuation: true
+      });
+
+      const starField = new THREE.Points(starFieldGeometry, starFieldMaterial);
+      scene.add(starField);
+
+      // Store original star positions for animation
+      const originalStarPositions = new Float32Array(starCount * 3);
+      for (let i = 0; i < starCount; i++) {
+        const i3 = i * 3;
+        originalStarPositions[i3] = starPositions[i3];
+        originalStarPositions[i3 + 1] = starPositions[i3 + 1];
+        originalStarPositions[i3 + 2] = starPositions[i3 + 2];
+      }
+
+      // Set initial star positions far away
+      for (let i = 0; i < starCount; i++) {
+        const i3 = i * 3;
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 200 + Math.random() * 300;
+        starPositions[i3] = Math.cos(angle) * distance;
+        starPositions[i3 + 1] = (Math.random() - 0.5) * 400;
+        starPositions[i3 + 2] = Math.sin(angle) * distance;
+      }
+      starFieldGeometry.setAttribute("position", new THREE.BufferAttribute(starPositions, 3));
+
+      // Create beautiful bright stars like test.html
+      const brightStarsGeometry = new THREE.BufferGeometry();
+      const brightStarCount = 300; // Tăng số bright stars
+      const brightStarPositions = new Float32Array(brightStarCount * 3);
+      const brightStarColors = new Float32Array(brightStarCount * 3);
+
+      for (let i = 0; i < brightStarCount; i++) {
+        const i3 = i * 3;
+        
+        const radius = 20 + Math.random() * 80;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(Math.random() * 2 - 1);
+        
+        brightStarPositions[i3] = radius * Math.sin(phi) * Math.cos(theta);
+        brightStarPositions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+        brightStarPositions[i3 + 2] = radius * Math.cos(phi);
+
+        // Multi-color bright stars
+        const brightStarColor = new THREE.Color();
+        const colorType = Math.random();
+        if (colorType < 0.25) {
+          // White stars
+          brightStarColor.setRGB(1, 1, 1);
+        } else if (colorType < 0.5) {
+          // Blue stars
+          brightStarColor.setRGB(0.5, 0.8, 1);
+        } else if (colorType < 0.75) {
+          // Yellow stars
+          brightStarColor.setRGB(1, 1, 0.5);
+        } else {
+          // Pink stars
+          brightStarColor.setRGB(1, 0.7, 0.9);
+        }
+        
+        brightStarColors[i3] = brightStarColor.r;
+        brightStarColors[i3 + 1] = brightStarColor.g;
+        brightStarColors[i3 + 2] = brightStarColor.b;
+      }
+
+      brightStarsGeometry.setAttribute("position", new THREE.BufferAttribute(brightStarPositions, 3));
+      brightStarsGeometry.setAttribute("color", new THREE.BufferAttribute(brightStarColors, 3));
+
+      const brightStarsMaterial = new THREE.PointsMaterial({
+        size: 0.4, // Nhỏ hơn như test.html
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.98,
+        blending: THREE.AdditiveBlending
+      });
+
+      const brightStars = new THREE.Points(brightStarsGeometry, brightStarsMaterial);
+      scene.add(brightStars);
+
+      // Create shooting stars effect
+      const shootingStarsGeometry = new THREE.BufferGeometry();
+      const shootingStarCount = 50; // 50 shooting stars
+      const shootingStarPositions = new Float32Array(shootingStarCount * 3);
+      const shootingStarColors = new Float32Array(shootingStarCount * 3);
+      const shootingStarSizes = new Float32Array(shootingStarCount);
+      const shootingStarSpeeds = new Float32Array(shootingStarCount);
+      const shootingStarStartPositions = new Float32Array(shootingStarCount * 3);
+
+      for (let i = 0; i < shootingStarCount; i++) {
+        const i3 = i * 3;
+        
+        // Start positions far away and high up
+        const startX = (Math.random() - 0.5) * 200;
+        const startY = 80 + Math.random() * 100; // High up
+        const startZ = -100 - Math.random() * 100; // Far away
+        
+        shootingStarStartPositions[i3] = startX;
+        shootingStarStartPositions[i3 + 1] = startY;
+        shootingStarStartPositions[i3 + 2] = startZ;
+        
+        // Current positions (same as start initially)
+        shootingStarPositions[i3] = startX;
+        shootingStarPositions[i3 + 1] = startY;
+        shootingStarPositions[i3 + 2] = startZ;
+
+        // Shooting star colors - bright white with slight variations
+        const shootingStarColor = new THREE.Color();
+        const colorType = Math.random();
+        if (colorType < 0.3) {
+          // Pure white
+          shootingStarColor.setRGB(1, 1, 1);
+        } else if (colorType < 0.6) {
+          // Slight blue tint
+          shootingStarColor.setRGB(0.9, 0.95, 1);
+        } else {
+          // Slight yellow tint
+          shootingStarColor.setRGB(1, 1, 0.9);
+        }
+        
+        shootingStarColors[i3] = shootingStarColor.r;
+        shootingStarColors[i3 + 1] = shootingStarColor.g;
+        shootingStarColors[i3 + 2] = shootingStarColor.b;
+
+        shootingStarSizes[i] = Math.random() * 0.8 + 0.4; // Medium to large size
+        shootingStarSpeeds[i] = Math.random() * 0.5 + 0.3; // Speed variation
+      }
+
+      shootingStarsGeometry.setAttribute("position", new THREE.BufferAttribute(shootingStarPositions, 3));
+      shootingStarsGeometry.setAttribute("color", new THREE.BufferAttribute(shootingStarColors, 3));
+      shootingStarsGeometry.setAttribute("size", new THREE.BufferAttribute(shootingStarSizes, 1));
+
+      const shootingStarsMaterial = new THREE.PointsMaterial({
+        size: 0.4,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending,
+        sizeAttenuation: true,
+        map: null // Đảm bảo không có texture vuông
+      });
+
+      const shootingStars = new THREE.Points(shootingStarsGeometry, shootingStarsMaterial);
+      scene.add(shootingStars);
+
+      camera.position.z = 50; // Start far away
+      camera.position.x = 15; // Slight angle for better view
+      camera.position.y = 8; // Elevated view
+
+      let mouseX = 0, mouseY = 0;
+
+      document.addEventListener('mousemove', (event) => {
+        mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+        mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+      });
+
+      const animate = () => {
+        requestAnimationFrame(animate);
+        
+        const time = Date.now() * 0.001;
+        const currentTime = Date.now();
+        
+        // Entrance animation
+        if (!isEntranceComplete) {
+          entranceProgress = Math.min((currentTime - startTime) / entranceDuration, 1);
+          
+          if (entranceProgress >= 1) {
+            isEntranceComplete = true;
+          }
+          
+          // Smooth easing function
+          const easeOut = 1 - Math.pow(1 - entranceProgress, 3);
+          
+          // Animate galaxy particles flying in
+          for (let i = 0; i < count; i++) {
+            const i3 = i * 3;
+            const startX = Math.cos(i * 0.1) * (50 + Math.random() * 100);
+            const startY = (Math.random() - 0.5) * 100;
+            const startZ = Math.sin(i * 0.1) * (50 + Math.random() * 100);
+            
+            const targetX = targetPositions[i3];
+            const targetY = targetPositions[i3 + 1];
+            const targetZ = targetPositions[i3 + 2];
+            
+            positions[i3] = startX + (targetX - startX) * easeOut;
+            positions[i3 + 1] = startY + (targetY - startY) * easeOut;
+            positions[i3 + 2] = startZ + (targetZ - startZ) * easeOut;
+          }
+          
+          galaxyGeometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+          
+          // Animate stars flying in with delay
+          const starEaseOut = Math.max(0, (entranceProgress - 0.3) / 0.7);
+          for (let i = 0; i < starCount; i++) {
+            const i3 = i * 3;
+            const startX = Math.cos(i * 0.05) * (200 + Math.random() * 300);
+            const startY = (Math.random() - 0.5) * 400;
+            const startZ = Math.sin(i * 0.05) * (200 + Math.random() * 300);
+            
+            const targetX = originalStarPositions[i3];
+            const targetY = originalStarPositions[i3 + 1];
+            const targetZ = originalStarPositions[i3 + 2];
+            
+            starPositions[i3] = startX + (targetX - startX) * starEaseOut;
+            starPositions[i3 + 1] = startY + (targetY - startY) * starEaseOut;
+            starPositions[i3 + 2] = startZ + (targetZ - startZ) * starEaseOut;
+          }
+          
+          starFieldGeometry.setAttribute("position", new THREE.BufferAttribute(starPositions, 3));
+          
+          // Fade in opacity
+          material.opacity = easeOut * 0.95;
+          starFieldMaterial.opacity = starEaseOut * 0.9;
+          
+          // Camera movement from far to close with beautiful angle
+          const targetZ = 20;
+          const startZ = 50;
+          const targetX = 10; // Beautiful side angle
+          const startX = 15;
+          const targetY = 5; // Slightly elevated
+          const startY = 8;
+          
+          // Smooth camera movement with easing
+          const smoothEase = easeOut * easeOut; // Double easing for smoother transition
+          camera.position.z = startZ + (targetZ - startZ) * smoothEase;
+          camera.position.x = startX + (targetX - startX) * smoothEase;
+          camera.position.y = startY + (targetY - startY) * smoothEase;
+          
+          // Animate central core and sun rays entrance
+          centralCore.material.opacity = easeOut * 0.6;
+          sunRays.material.opacity = easeOut * 0.4;
+          
+          // Animate rainbow rings entrance
+          ringSparkles.material.opacity = easeOut * 0.95;
+          ringSparkles2.material.opacity = easeOut * 0.9;
+        }
+        
+        // Normal rotation after entrance
+        if (isEntranceComplete) {
+          points.rotation.y += 0.001; // Tăng tốc độ xoay
+          points.rotation.x += 0.0003;
+          material.opacity = 0.95 + Math.sin(time * 2) * 0.03; // Pulse effect
+          
+          // Animate central core particles
+          centralCore.rotation.y += 0.03;
+          centralCore.rotation.x += 0.02;
+          centralCore.material.opacity = 0.5 + Math.sin(time * 3) * 0.1;
+          
+          // Animate sun rays
+          sunRays.rotation.z += 0.015;
+          sunRays.material.opacity = 0.6 + Math.sin(time * 2) * 0.2;
+          
+          // Animate core sparkles
+          coreSparkles.rotation.y += 0.02;
+          coreSparkles.rotation.x += 0.01;
+          coreSparkles.material.opacity = 0.8 + Math.sin(time * 2.5) * 0.1;
+          
+          // Animate sparkling ring
+          ringSparkles.rotation.z += 0.025; // Faster rotation
+          ringSparkles.material.opacity = 0.8 + Math.sin(time * 2) * 0.1; // Normal opacity animation
+          ringSparkles.material.size = 0.05 + Math.sin(time * 1.5) * 0.015; // Enhanced size pulse
+          
+          // Animate shooting stars
+          for (let i = 0; i < shootingStarCount; i++) {
+            const i3 = i * 3;
+            const speed = shootingStarSpeeds[i];
+            
+            // Move shooting stars diagonally down and forward
+            shootingStarPositions[i3] += speed * 0.5; // Move right
+            shootingStarPositions[i3 + 1] -= speed * 1.2; // Move down faster
+            shootingStarPositions[i3 + 2] += speed * 0.8; // Move forward
+            
+            // Reset shooting star when it goes too far down or forward
+            if (shootingStarPositions[i3 + 1] < -50 || shootingStarPositions[i3 + 2] > 50) {
+              // Reset to start position
+              shootingStarPositions[i3] = shootingStarStartPositions[i3];
+              shootingStarPositions[i3 + 1] = shootingStarStartPositions[i3 + 1];
+              shootingStarPositions[i3 + 2] = shootingStarStartPositions[i3 + 2];
+            }
+          }
+          shootingStarsGeometry.setAttribute("position", new THREE.BufferAttribute(shootingStarPositions, 3));
+          
+          // Animate second sparkling ring
+          ringSparkles2.rotation.z -= 0.02; // Opposite direction, faster
+          ringSparkles2.material.opacity = 0.7 + Math.sin(time * 1.5) * 0.15; // Different opacity animation
+          ringSparkles2.material.size = 0.04 + Math.sin(time * 2) * 0.015; // Enhanced size pulse
+        }
+        
+        starField.rotation.y += 0.0002; // Tăng tốc độ xoay stars
+        brightStars.rotation.y += 0.0003;
+        brightStars.material.opacity = 0.8 + Math.sin(time * 3) * 0.15; // Sparkle effect
+        
+        // Camera movement based on mouse (always available)
+        // Simple mouse movement like before
+        camera.position.x += (mouseX * 10 - camera.position.x) * 0.01;
+        camera.position.y += (mouseY * 10 - camera.position.y) * 0.01;
+        camera.position.z = 18; // Balanced distance
+        
+        controls.update();
+        renderer.render(scene, camera);
+      };
+
+      animate();
+
+             // Music Player for Galaxy Universe
+       const bgMusic = document.getElementById('bgMusic');
+       let isPlaying = false;
+       const universeSong = 'music/univer.mp3';
+
+               function playUniverseSong() {
+          console.log('Playing universe song:', universeSong);
+          bgMusic.src = universeSong;
+          bgMusic.load(); // Force load the audio
+          bgMusic.play().then(() => {
+            console.log('Music started successfully!');
+            isPlaying = true;
+          }).catch(e => {
+            console.log('Error playing music:', e);
+            // Try again after a short delay
+            setTimeout(() => {
+              bgMusic.play().then(() => {
+                console.log('Music started on retry!');
+                isPlaying = true;
+              }).catch(e2 => {
+                console.log('Still failed to play:', e2);
+              });
+            }, 500);
+          });
+        }
+
+               // Auto-play on first interaction
+        let hasInteracted = false;
+        let musicStarted = false;
+        
+        function handleFirstInteraction() {
+          console.log('User interaction detected!');
+          if (!hasInteracted) {
+            hasInteracted = true;
+            console.log('Starting auto-play...');
+            startMusic();
+            // Remove listeners after first interaction
+            document.removeEventListener('click', handleFirstInteraction);
+            document.removeEventListener('mousemove', handleFirstInteraction);
+            document.removeEventListener('keydown', handleFirstInteraction);
+            document.removeEventListener('touchstart', handleFirstInteraction);
+            document.removeEventListener('scroll', handleFirstInteraction);
+            document.removeEventListener('wheel', handleFirstInteraction);
+          }
+        }
+        
+        function startMusic() {
+          if (!musicStarted) {
+            musicStarted = true;
+            console.log('Starting music...');
+            bgMusic.load(); // Force load
+            bgMusic.play().then(() => {
+              console.log('Music started successfully!');
+              isPlaying = true;
+            }).catch(e => {
+              console.log('Failed to play, trying again...');
+              // Try again with a longer delay
+              setTimeout(() => {
+                bgMusic.play().then(() => {
+                  console.log('Music started on retry!');
+                  isPlaying = true;
+                }).catch(e2 => {
+                  console.log('Still failed to play:', e2);
+                });
+              }, 1000);
+            });
+          }
+        }
+        
+        // Try to start music immediately
+        bgMusic.load(); // Force load first
+        bgMusic.play().then(() => {
+          console.log('Auto-play successful on load!');
+          musicStarted = true;
+          isPlaying = true;
+        }).catch(e => {
+          console.log('Auto-play failed on load, waiting for user interaction');
+          // Add multiple event listeners for better compatibility
+          document.addEventListener('click', handleFirstInteraction);
+          document.addEventListener('mousemove', handleFirstInteraction);
+          document.addEventListener('keydown', handleFirstInteraction);
+          document.addEventListener('touchstart', handleFirstInteraction);
+          document.addEventListener('scroll', handleFirstInteraction);
+          document.addEventListener('wheel', handleFirstInteraction);
+        });
+
+        // Auto play/pause based on tab focus
+        document.addEventListener('visibilitychange', function() {
+          if (bgMusic) {
+            if (document.hidden) {
+              // Tab is hidden - pause music
+              bgMusic.pause();
+              isPlaying = false;
+            } else {
+              // Tab is visible - play music if it was playing before
+              if (musicStarted && !isPlaying) {
+                bgMusic.play().then(() => {
+                  isPlaying = true;
+                }).catch(e => {
+                  console.log('Failed to resume music:', e);
+                });
+              }
+            }
+          }
+        });
+
+
+
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    </script>
+  </body>
+</html>

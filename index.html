@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hoà Nguyễn</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"
+    ></script>
+  </head>
+  <body>
+    <!-- Loading Screen -->
+    <div class="loading-screen">
+      <div class="loader">
+        <div class="loader-circle"></div>
+        <div class="loader-text">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+      <div class="nav-container">
+        <div class="nav-logo">
+          <span class="logo-text">hoanguyen</span>
+        </div>
+        <ul class="nav-menu">
+          <li class="nav-item">
+            <a href="#home" class="nav-link">Trang Chủ</a>
+          </li>
+          <li class="nav-item">
+            <a href="#interests" class="nav-link">Sở Thích</a>
+          </li>
+          <li class="nav-item">
+            <a href="#projects" class="nav-link">Dự Án</a>
+          </li>
+          <li class="nav-item">
+            <a href="#contact" class="nav-link">Liên Hệ</a>
+          </li>
+        </ul>
+        <div class="hamburger">
+          <span class="bar"></span>
+          <span class="bar"></span>
+          <span class="bar"></span>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Welcome Letter Modal -->
+    <div class="welcome-modal" id="welcomeModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">💌 Chào Mừng Bạn!</h2>
+          <button class="modal-close" onclick="closeWelcomeModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="letter-content">
+            <p class="letter-greeting">Xin chào bạn! 🌸</p>
+            <p class="letter-text typing-text" id="typingText">
+            </p>
+            <p class="letter-signature">
+            <br>
+              <span class="signature-name">Hoà Nguyễn</span>
+            </p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="modal-btn" onclick="closeWelcomeModal()">
+            <i class="fas fa-heart"></i> Cảm ơn bạn! ❤️
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+      <div class="hero-background">
+        <div class="floating-shapes">
+          <div class="shape shape-1"></div>
+          <div class="shape shape-2"></div>
+          <div class="shape shape-3"></div>
+          <div class="shape shape-4"></div>
+          <div class="shape shape-5"></div>
+        </div>
+      </div>
+      <div class="hero-content">
+        <div class="hero-image">
+          <div class="profile-card">
+            <img
+              src="images/profile.jpg"
+              alt="hoanguyen"
+              class="profile-photo"
+            />
+            <h2 class="profile-name">Hoà Nguyễn</h2>
+            <div class="profile-stats">
+              <div class="stat">
+                <span class="stat-number" data-target="19">0</span>
+                <span class="stat-label">Tuổi</span>
+              </div>
+              <div class="stat">
+                <span class="stat-number">Hà Nội</span>
+                <span class="stat-label">Nơi Sống</span>
+              </div>
+            </div>
+            <div class="social-links-profile">
+              <a
+                href="https://www.facebook.com/hoanguyen24606"
+                target="_blank"
+                class="social-link-profile"
+              >
+                <i class="fab fa-facebook"></i>
+              </a>
+              <a
+                href="https://www.tiktok.com/@them_ancut"
+                target="_blank"
+                class="social-link-profile"
+              >
+                <i class="fab fa-tiktok"></i>
+              </a>
+              <a
+                href="https://www.instagram.com/hoanguyen00t/"
+                target="_blank"
+                class="social-link-profile"
+              >
+                <i class="fab fa-instagram"></i>
+              </a>
+            </div>
+          </div>
+
+          <!-- Welcome Letter Button -->
+          <div class="welcome-letter-btn" onclick="showWelcomeModal()">
+            <i class="fas fa-heart"></i>
+            <span class="letter-text">Gửi Bạn</span>
+          </div>
+
+          <!-- Music Controls -->
+          <div class="music-controls">
+            <button class="control-btn prev-btn" onclick="previousSong()">
+              <i class="fas fa-step-backward"></i>
+            </button>
+            <button class="control-btn play-btn" onclick="togglePlay()">
+              <i class="fas fa-play"></i>
+            </button>
+            <button class="control-btn next-btn" onclick="nextSong()">
+              <i class="fas fa-step-forward"></i>
+            </button>
+          </div>
+
+          <audio id="audioPlayer" preload="auto">
+            <source src="music/song1.mp3" type="audio/mpeg" />
+            <source src="music/song2.mp3" type="audio/mpeg" />
+            <source src="music/song3.mp3" type="audio/mpeg" />
+            <source src="music/song4.mp3" type="audio/mpeg" />
+          </audio>
+        </div>
+      </div>
+    </section>
+
+    <!-- Hobbies Section -->
+    <section id="interests" class="hobbies">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">Sở Thích & Đam Mê</h2>
+          <div class="section-line"></div>
+        </div>
+        <div class="hobbies-grid">
+          <div class="hobby-card">
+            <div class="hobby-icon">
+              <i class="fas fa-music"></i>
+            </div>
+            <h3>Nghe Nhạc</h3>
+            <p>
+              Âm nhạc là một phần không thể thiếu trong cuộc sống của tôi. Tôi
+              thích nghe nhạc và đôi khi cũng thử sáng tác.
+            </p>
+          </div>
+          <div class="hobby-card">
+            <div class="hobby-icon">
+              <i class="fas fa-mountain"></i>
+            </div>
+            <h3>Ngắm Cảnh</h3>
+            <p>
+              Tôi thích ngắm nhìn những cảnh đẹp thiên nhiên, từ núi non hùng vĩ
+              đến những góc phố bình yên.
+            </p>
+          </div>
+          <div class="hobby-card">
+            <div class="hobby-icon">
+              <i class="fas fa-coffee"></i>
+            </div>
+            <h3>Thưởng Thức</h3>
+            <p>
+              Tôi thích thưởng thức những khoảnh khắc bình yên, một tách cà phê
+              và ngắm nhìn cuộc sống xung quanh.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Projects Section -->
+    <section id="projects" class="projects">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">Dự Án Của Tôi</h2>
+          <div class="section-line"></div>
+        </div>
+        <div class="projects-grid">
+          <!-- Project cards sẽ được thêm vào đây khi có dự án -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">Liên Hệ</h2>
+          <div class="section-line"></div>
+        </div>
+        <div class="contact-content">
+          <div class="contact-form">
+            <h3 class="contact-title">Gửi Tin Nhắn Cho Tôi</h3>
+            <p class="contact-description">
+              Hãy để lại tin nhắn nếu bạn muốn liên hệ với tôi!
+            </p>
+            <form id="contactForm">
+              <div class="form-group">
+                <input
+                  type="text"
+                  name="user_name"
+                  placeholder="Tên của bạn"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <input
+                  type="email"
+                  name="user_email"
+                  placeholder="Email của bạn"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <textarea
+                  name="message"
+                  placeholder="Tin nhắn của bạn"
+                  rows="5"
+                  required
+                ></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary">
+                Gửi Tin Nhắn
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-text">
+            <p>&copy; Chúc tất cả mọi người luôn vui vẻ.</p>
+          </div>
+          <div class="social-links">
+            <a
+              href="https://www.facebook.com/hoanguyen24606"
+              target="_blank"
+              class="social-link"
+            >
+              <i class="fab fa-facebook"></i>
+            </a>
+            <a
+              href="https://www.instagram.com/hoanguyen00t/"
+              target="_blank"
+              class="social-link"
+            >
+              <i class="fab fa-instagram"></i>
+            </a>
+            <a
+              href="https://www.tiktok.com/@them_ancut"
+              target="_blank"
+              class="social-link"
+            >
+              <i class="fab fa-tiktok"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
